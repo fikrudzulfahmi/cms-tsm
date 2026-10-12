@@ -1,58 +1,84 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CMS TSM Blitar
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Website sekolah untuk **SMKS Islam 1 Blitar** — jurusan Teknik Sepeda Motor.
+Dibangun dengan **Laravel 13 (API) + Vue 3 SPA (2 entry)**, mengikuti spesifikasi
+`CMS-TSM-BLITAR.md` dan design tokens `DESIGN.md`.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Backend**: Laravel 13, Sanctum (cookie auth), MySQL/MariaDB `cms_tsm`, PHP 8.3
+- **Frontend**: Vue 3 `<script setup lang="ts">`, Vite 2-entry (publik + admin), TanStack Query, Pinia, Chart.js
+- **CSS**: Design tokens (`resources/css/tokens.css`) — primary `#0D47A1`, bg `#E3F2FD`, ink `#0B1F3A`
+- **Keamanan**: HTMLPurifier, SecurityMonitor deteksi serangan, rate limiter, hash pengunjung
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Cara menjalankan (lokal)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Nyalakan MySQL (XAMPP Control Panel → MySQL Start).
+2. Dobel-klik `jalankan-cms.bat`.
+3. Buka `http://127.0.0.1:8000` (publik) atau `http://127.0.0.1:8000/admin` (admin).
+4. Dari HP pada WiFi yang sama: `http://192.168.1.6:8000`.
 
-## Learning Laravel
+> Jika server belum jalan, jalankan manual:
+> `C:\php83\php.exe artisan serve --host=0.0.0.0 --port=8000`
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Login admin
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Email: `admin@tsm-blitar.sch.id`
+- Sandi: `admin12345`
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Role lain (seeder): `editor@tsm-blitar.sch.id` / `editor12345` (editor),
+`penulis@tsm-blitar.sch.id` / `penulis12345` (penulis).
 
-## Agentic Development
+## Fitur
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Publik
+- Landing dinamis (hero, window card bengkel, statistik, kompetensi, program, sarana, prestasi, mitra, FAQ, CTA WhatsApp, peta)
+- Berita + detail (komentar, like, share WhatsApp/Facebook/X/Telegram/salin, berita terkait)
+- Prestasi, Galeri, Tentang (staff), Kontak (form + peta)
+- SEO server-side: meta tag, JSON-LD, canonical, sitemap.xml, robots.txt, RSS feed
 
-```bash
-composer require laravel/boost --dev
+### Admin
+- Dashboard (statistik kunjungan 7d/30d, grafik Chart.js, berita terbaru, komentar pending)
+- Berita: CRUD + draf/review/scheduled/publish/archive + revisi + analisa SEO (skor + saran)
+- Kategori, Komentar (moderasi, balas, bulk), Konten situs (sections + 9 item lists + urutan)
+- Media library (unggah, edit alt/caption, hapus)
+- Pesan masuk, Umpan balik alumni
+- Pengaturan (umum/seo/komentar), Pengguna (CRUD + role + aktif)
+- **Log aktivitas** — dengan tab "Serangan terdeteksi" (insight keamanan)
 
-php artisan boost:install
+### Keamanan
+- **SecurityMonitor**: deteksi SQLi, XSS, path traversal, LFI, command injection, exploit Laravel populer; auto-ban IP setelah ambang batas
+- **ActivityLogger**: semua aksi admin tercatat di `activity_logs` (siapa, kapan, apa, dari mana)
+- Throttle login 5 percobaan/menit, percobaan login tersimpan di `cms_login_attempts`
+- Sanitasi HTML berbasis HTMLPurifier (cek `app/Services/HtmlSanitizer.php`)
+- Hash pengunjung — alamat IP tidak disimpan mentah, hanya hash (privacy by design)
+- Header keamanan (`SecurityHeaders` middleware)
+
+## Struktur
+
+```
+app/
+├── Http/Controllers/Api/V1/
+│   ├── Admin/      # 20 controller admin (berita, kategori, konten, media, ...)
+│   └── Public/     # endpoint publik (landing, posts, comments, contact, track)
+├── Models/         # 28 model (tabel cms_* eksplisit)
+├── Policies/       # PostPolicy, CommentPolicy, UserPolicy, CmsContentPolicy
+├── Services/       # SecurityMonitor, ActivityLogger, HtmlSanitizer, SeoAnalyzer, VisitorHasher
+└── Enums/          # Role, PostStatus, CommentStatus, MessageType, ShareChannel
+resources/js/
+├── public/         # SPA publik (landing, berita, prestasi, galeri, tentang, kontak)
+└── admin/          # SPA admin (dashboard, berita, kategori, komentar, konten, media, ...)
+routes/
+├── api.php         # API v1 (publik + admin + auth)
+└── web.php         # SEO shell + sitemap + robots + RSS
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Verifikasi
 
-## Contributing
+Semua endpoint admin + publik telah diuji dengan login asli (lihat log):
+12 endpoint admin → 200, 5 endpoint publik → 200, deteksi serangan → 400 + tercatat,
+login throttle aktif, build Vite exit 0.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Repo
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+`https://github.com/fikrudzulfahmi/cms-tsm.git`
