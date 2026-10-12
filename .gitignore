@@ -1,0 +1,15 @@
+/vendor
+/node_modules
+/public/build
+/.env
+/storage/logs/*
+/storage/app/*.py
+/storage/framework/cache/data/*
+*.log
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+.env.backup
+.phpunit.result.cache
+auth.json
