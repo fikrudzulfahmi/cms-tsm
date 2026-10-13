@@ -56,6 +56,8 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('posts', [PostController::class, 'index'])
             ->name('posts.index')->middleware('throttle:public');
+        Route::get('categories', [PostController::class, 'categories'])
+            ->name('categories.index')->middleware('throttle:public');
         Route::get('posts/{slug}', [PostController::class, 'show'])
             ->name('posts.show')->middleware('throttle:public');
 

@@ -1,24 +1,27 @@
-<!-- PLACEHOLDER halaman publik — dibuat agar `npm run build` hijau.
-     Ganti dengan implementasi sebenarnya pada tugas halaman publik. -->
 <template>
-  <section class="container page">
-    <p class="postcard mono">PLACEHOLDER</p>
-    <h1>Halaman tidak ditemukan</h1>
-    <p class="muted">Alamat yang kamu tuju tidak tersedia.</p>
-  </section>
+  <div class="nf">
+    <div class="container">
+      <p class="code mono">404</p>
+      <h1>Halaman tidak ditemukan</h1>
+      <p class="muted">Maaf, halaman yang kamu cari tidak tersedia atau sudah dipindahkan.</p>
+      <RouterLink class="btn btn-primary" to="/">Kembali ke beranda</RouterLink>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-// Halaman NotFound belum diimplementasikan.
+import { RouterLink } from 'vue-router';
 </script>
 
 <style scoped>
-.page { padding: 80px 0 120px; }
-.postcard {
-  display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
-  background: var(--bg); border: 1px dashed var(--line); color: var(--primary);
-  border-radius: var(--r-pill); padding: 4px 12px; margin-bottom: 16px;
+.nf {
+  min-height: 70vh; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 80px 0;
 }
-h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
-.muted { color: var(--muted); margin-top: 12px; max-width: 60ch; }
+.code {
+  font-size: clamp(3.4rem, 12vw, 6rem); font-weight: 800; color: var(--primary);
+  line-height: 1; margin-bottom: 18px;
+}
+h1 { font-size: clamp(1.4rem, 3vw, 2rem); margin-bottom: 14px; }
+.muted { color: var(--muted); max-width: 42ch; margin: 0 auto 28px; }
 </style>

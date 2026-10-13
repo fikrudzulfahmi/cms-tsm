@@ -5,6 +5,7 @@ namespace App\Http\Resources\Public;
 use App\Http\Resources\Concerns\FormatsMedia;
 use App\Http\Resources\Concerns\HasVisitorData;
 use App\Models\Media;
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -82,6 +83,13 @@ class PostResource extends JsonResource
             ],
 
             'visitor' => $this->visitorData(),
+
+            // Komentar yang disetujui (dipakai halaman detail publik)
+            'comments' => CommentResource::collection(
+                $this->whenLoaded('comments', fn () => $this->resource->comments)
+            ),
+            // Berita terkait (dipakai halaman detail publik) — selalu sediakan
+            'related' => PostCardResource::collection($this->relatedPosts()),
         ];
     }
 
@@ -107,5 +115,19 @@ class PostResource extends JsonResource
         $featured = $this->relationLoaded('featuredMedia') ? $this->featuredMedia : null;
 
         return $featured instanceof Media ? $featured->url() : null;
+    }
+
+    /**
+     * 3 berita terkait (kategori sama lebih diutamakan).
+     */
+    protected function relatedPosts()
+    {
+        return Post::query()
+            ->published()
+            ->where('id', '!=', $this->id)
+            ->when($this->category_id, fn ($q) => $q->where('category_id', $this->category_id))
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get();
     }
 }

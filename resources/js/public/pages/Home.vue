@@ -18,35 +18,27 @@
             <RouterLink class="btn btn-secondary" to="/berita">Lihat kegiatan</RouterLink>
           </div>
         </div>
-        <div class="hero-window">
-          <WindowCard name="bengkel — praktik.xyz">
-            <div class="workshop">
-              <div class="row">
-                <span class="mono label">UNIT</span>
-                <span class="mono value">Honda Beat — Injeksi</span>
-              </div>
-              <div class="row">
-                <span class="mono label">KELUHAN</span>
-                <span class="mono value">Mesin brebet saat gas dibuka</span>
-              </div>
-              <div class="row">
-                <span class="mono label">INSTRUKTUR</span>
-                <span class="mono value">Pak Andi — 12 thn bengkel</span>
-              </div>
-              <div class="progress">
-                <div class="progress-head">
-                  <span class="mono label">PROGRES PRAKTIK</span>
-                  <span class="mono value">3 / 4 selesai</span>
-                </div>
-                <div class="bar"><div class="bar-fill"></div></div>
-              </div>
-              <ul class="checklist">
-                <li v-for="c in checklist" :key="c" :class="{ done: c.done }">
-                  <span class="box" aria-hidden="true"></span>{{ c.text }}
-                </li>
-              </ul>
+        <div class="hero-media">
+          <figure class="hero-photo">
+            <img
+              v-if="heroImage"
+              :src="heroImage.url"
+              :alt="heroImage.alt"
+              width="1200" height="800"
+              decoding="async"
+            />
+            <div v-else class="hero-photo-fallback" aria-hidden="true">
+              <svg viewBox="0 0 1200 800" width="100%" height="100%" role="img" aria-label="Foto bengkel praktik TSM">
+                <rect width="1200" height="800" fill="#0D47A1"/>
+                <circle cx="600" cy="380" r="150" fill="#1976D2"/>
+                <path d="M520 380h160M600 300v160" stroke="#E3F2FD" stroke-width="18" stroke-linecap="round"/>
+                <text x="600" y="640" text-anchor="middle" fill="#E3F2FD" font-size="40" font-family="sans-serif" font-weight="700">Bengkel Praktik TSM</text>
+              </svg>
             </div>
-          </WindowCard>
+            <figcaption class="hero-photo-cap">
+              <span class="mono">Bengkel praktik — {{ settings?.school_name ?? 'TSM' }}</span>
+            </figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -234,6 +226,10 @@
 </template>
 
 <script setup lang="ts">
+import { SITE_MENU } from '@js/public/menu';
+
+// satu sumber kebenaran menu -> navbar konsisten di semua halaman
+const menu = SITE_MENU;
 import { useQuery } from '@tanstack/vue-query';
 import { computed } from 'vue';
 import { api } from '@js/shared/api';
@@ -246,7 +242,15 @@ import Footer from '../components/Footer.vue';
 
 interface LandingData {
   settings: Record<string, unknown>;
-  sections: Array<{ key: string; title: string | null; subtitle: string | null; sort: number; is_visible: boolean }>;
+  sections: Array<{
+    key: string;
+    title: string | null;
+    subtitle: string | null;
+    body: string | null;
+    sort: number;
+    is_visible: boolean;
+    extra: Record<string, unknown> | null;
+  }>;
   competencies: Array<{ id: number; title: string; description: string | null }>;
   programs: Array<{ id: number; title: string; description: string | null }>;
   facilities: Array<{ id: number; name: string; spec: string | null; quantity: number }>;
@@ -259,14 +263,15 @@ interface LandingData {
 
 const { data, suspense } = useQuery<LandingData>({
   queryKey: ['landing'],
-  queryFn: async () => (await api.get('/site/landing')).data,
+  // bungkus API membalas { data: {...} } -> ambil isinya, bukan envelopenya
+  queryFn: async () => (await api.get('/site/landing')).data?.data ?? {},
   staleTime: 5 * 60_000, // 5 menit (spec 5.3)
 });
 
 const settings = computed(() => data.value?.settings ?? {});
 const sections = computed(() => data.value?.sections ?? []);
-const competencies = computed(() => data.value?.competencies ?? []);
-const programs = computed(() => data.value?.programs ?? []);
+const competencies = computed(() => data.value?.kompetensi ?? []);
+const programs = computed(() => data.value?.program ?? []);
 const facilities = computed(() => data.value?.facilities ?? []);
 const stages = computed(() => data.value?.stages ?? []);
 const achievements = computed(() => data.value?.achievements ?? []);
@@ -275,6 +280,16 @@ const feedback = computed(() => data.value?.feedback ?? []);
 const posts = computed(() => data.value?.posts ?? []);
 
 const hero = computed(() => sections.value.find((s) => s.key === 'hero'));
+
+// Foto hero: ambil dari extra.hero_image section, atau media pertama dari galeri
+// (GalleryResource mengirim { image: { url, alt } }, bukan url di level atas)
+const heroImage = computed(() => {
+  const extra = hero.value?.extra as { hero_image?: { url: string; alt: string } } | undefined;
+  if (extra?.hero_image?.url) return extra.hero_image;
+  const gallery = data.value?.gallery ?? [];
+  const first = gallery[0]?.image;
+  return first?.url ? { url: first.url, alt: first.alt ?? 'Bengkel praktik TSM' } : null;
+});
 const stats = computed(() => {
   const extra = sections.value.find((s) => s.key === 'statistik')?.extra as
     | { stats?: Array<{ label: string; value: string }> }
@@ -292,15 +307,6 @@ const email = computed(() => String(settings.value.school_email ?? ''));
 const serviceHours = computed(() => String(settings.value.service_hours ?? ''));
 const mapsUrl = computed(() => String(settings.value.google_maps_url ?? ''));
 const saranaText = computed(() => String(sections.value.find((s) => s.key === 'sarana')?.body ?? ''));
-const menu = computed(() => [
-  { label: 'Beranda', to: '/' },
-  { label: 'Berita', to: '/berita' },
-  { label: 'Prestasi', to: '/prestasi' },
-  { label: 'Galeri', to: '/galeri' },
-  { label: 'Tentang', to: '/tentang' },
-  { label: 'Kontak', to: '/kontak' },
-]);
-
 function section(key: string) {
   return sections.value.find((s) => s.key === key);
 }
@@ -308,13 +314,6 @@ function isVisible(key: string) {
   const s = section(key);
   return s ? s.is_visible : true;
 }
-
-const checklist = [
-  { text: 'Periksa kelistrikan busi', done: true },
-  { text: 'Bersihkan injektor', done: true },
-  { text: 'Ganti filter udara', done: true },
-  { text: 'Uji jalan', done: false },
-];
 </script>
 
 <style scoped>
@@ -328,20 +327,25 @@ const checklist = [
 .hero-title { margin-block: 20px 16px; }
 .hero-sub { color: var(--muted); font-size: 1.08rem; max-width: 46ch; margin-bottom: 28px; }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
-.hero-window { animation: float 6s ease-in-out infinite; }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-.workshop { display: flex; flex-direction: column; gap: 14px; }
-.workshop .row { display: flex; justify-content: space-between; gap: 16px; font-size: 0.9rem; }
-.workshop .label { color: var(--steel); }
-.progress { margin-top: 4px; }
-.progress-head { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; }
-.bar { height: 8px; background: var(--bg); border-radius: 99px; overflow: hidden; }
-.bar-fill { height: 100%; width: 75%; border-radius: 99px; background: linear-gradient(135deg, var(--sky), var(--primary)); }
-.checklist { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-.checklist li { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
-.checklist .box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--line); flex-shrink: 0; }
-.checklist li.done .box { background: var(--primary); border-color: var(--primary); }
+/* Foto hero (mengganti card window bengkel) */
+.hero-media { animation: float 6s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.hero-photo {
+  margin: 0; position: relative;
+  border-radius: var(--r-lg, 22px); overflow: hidden;
+  box-shadow: 0 24px 60px -28px rgba(13, 71, 161, 0.55);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.hero-photo img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
+.hero-photo-fallback { line-height: 0; }
+.hero-photo-cap {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 26px 20px 14px;
+  background: linear-gradient(to top, rgba(11, 31, 58, 0.82), rgba(11, 31, 58, 0));
+  color: #fff; font-size: 0.78rem; letter-spacing: 0.04em;
+}
 
 .spec-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .spec-table th { text-align: left; color: var(--muted); font-size: 0.75rem; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }

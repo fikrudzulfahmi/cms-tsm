@@ -44,6 +44,6 @@ class Media extends Model
             $path = $this->variants[$variant];
         }
 
-        return asset('storage/' . ltrim($path, '/'));
+        return '/storage/' . ltrim($path, '/');
     }
 }

@@ -52,11 +52,26 @@ final class PostController extends Controller
     }
 
     /**
+     * Daftar kategori (untuk filter di halaman berita publik).
+     */
+    public function categories(): JsonResponse
+    {
+        $categories = \App\Models\Category::query()
+            ->orderBy('sort')
+            ->withCount(['posts' => fn ($q) => $q->published()])
+            ->get();
+
+        return response()->json([
+            'data' => \App\Http\Resources\Public\CategoryResource::collection($categories),
+        ])->withHeaders(['Cache-Control' => 'public, max-age=300']);
+    }
+
+    /**
      * Detail berita + reaksi pengunjung saat ini + berita terkait.
      */
     public function show(Request $request, string $slug): JsonResponse
     {
-        $post = Post::with(['category', 'author', 'featuredMedia', 'ogMedia', 'tags'])
+        $post = Post::with(['category', 'author', 'featuredMedia', 'ogMedia', 'tags', 'comments' => fn ($q) => $q->approved()->orderBy('id')])
             ->where('slug', $slug)
             ->published()
             ->firstOrFail();

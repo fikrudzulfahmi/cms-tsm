@@ -31,35 +31,45 @@ final class LandingController extends Controller
      */
     public function index(): JsonResponse
     {
-        $data = Cache::remember('landing:full', self::CACHE_TTL, function (): array {
-            return [
-                'settings' => Setting::all()->pluck('value', 'key'),
-                'sections' => Section::orderBy('sort')->get(),
-                'competencies' => Competency::orderBy('sort')->get(),
-                'programs' => Program::with('image')->orderBy('sort')->get(),
-                'facilities' => Facility::with('image')->orderBy('sort')->get(),
-                'stages' => LearningStage::orderBy('sort')->get(),
-                'achievements' => Achievement::with('image')->orderByDesc('year')->orderBy('sort')->get(),
-                'careers' => Career::orderBy('sort')->get(),
-                'partners' => Partner::with('logo')->orderBy('sort')->get(),
-                'gallery' => GalleryItem::with('media')->orderBy('sort')->limit(12)->get(),
-                'staff' => Staff::with('photo')->orderBy('sort')->get(),
-                'faqs' => Faq::orderBy('sort')->get(),
-                'feedback' => AlumniFeedback::with('photo')->approved()->orderByDesc('created_at')->get(),
-                'posts' => Post::with(['category', 'author', 'featuredMedia'])
-                    ->published()
-                    ->orderByDesc('published_at')
-                    ->limit(6)
-                    ->get(),
-                'categories' => Category::orderBy('sort')->withCount('posts')->get(),
-            ];
-        });
+        $data = $this->landingData();
 
         return (new LandingResource($data))
             ->response()
             ->withHeaders([
-                'Cache-Control' => 'public, max-age=300',
+                // Saat development, larang browser menyimpan response agar
+                // perubahan data langsung terlihat (hindari "stale landing").
+                'Cache-Control' => app()->environment('local')
+                    ? 'no-store'
+                    : 'public, max-age=300',
             ]);
+    }
+
+    /**
+     * Kumpul seluruh data landing (fresh, tanpa cache saat development).
+     */
+    protected function landingData(): array
+    {
+        return [
+            'settings' => Setting::all()->pluck('value', 'key'),
+            'sections' => Section::orderBy('sort')->get(),
+            'competencies' => Competency::orderBy('sort')->get(),
+            'programs' => Program::with('image')->orderBy('sort')->get(),
+            'facilities' => Facility::with('image')->orderBy('sort')->get(),
+            'stages' => LearningStage::orderBy('sort')->get(),
+            'achievements' => Achievement::with('image')->orderByDesc('year')->orderBy('sort')->get(),
+            'careers' => Career::orderBy('sort')->get(),
+            'partners' => Partner::with('logo')->orderBy('sort')->get(),
+            'gallery' => GalleryItem::with('media')->orderBy('sort')->limit(12)->get(),
+            'staff' => Staff::with('photo')->orderBy('sort')->get(),
+            'faqs' => Faq::orderBy('sort')->get(),
+            'feedback' => AlumniFeedback::with('photo')->approved()->orderByDesc('created_at')->get(),
+            'posts' => Post::with(['category', 'author', 'featuredMedia'])
+                ->published()
+                ->orderByDesc('published_at')
+                ->limit(6)
+                ->get(),
+            'categories' => Category::orderBy('sort')->withCount('posts')->get(),
+        ];
     }
 
     public function settings(): JsonResponse
