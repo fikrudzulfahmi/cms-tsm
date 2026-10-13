@@ -13,3 +13,6 @@ Thumbs.db
 .env.backup
 .phpunit.result.cache
 auth.json
+
+# snapshot lokal (Hermes)
+backup/
